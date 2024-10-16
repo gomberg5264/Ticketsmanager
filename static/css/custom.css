@@ -1,0 +1,12 @@
+/* Add any custom styles here if needed */
+body {
+    padding-top: 20px;
+}
+
+.ticket-list {
+    margin-top: 20px;
+}
+
+.ticket-item {
+    margin-bottom: 10px;
+}
