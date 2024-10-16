@@ -7,7 +7,8 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(64), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
-    tickets = db.relationship('Ticket', backref='author', lazy='dynamic')
+    tickets = db.relationship('Ticket', backref='author', lazy='dynamic', foreign_keys='Ticket.user_id')
+    assigned_tickets = db.relationship('Ticket', backref='assigned_to', lazy='dynamic', foreign_keys='Ticket.assigned_user_id')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -21,6 +22,7 @@ class Ticket(db.Model):
     description = db.Column(db.Text, nullable=False)
     status = db.Column(db.String(20), nullable=False, default='low')
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    assigned_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
     def __repr__(self):
         return f'<Ticket {self.title}>'

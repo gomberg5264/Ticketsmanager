@@ -2,7 +2,7 @@ from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_user, login_required, logout_user, current_user
 from app import app, db, login_manager
 from models import User, Ticket
-from forms import LoginForm, RegistrationForm, TicketForm
+from forms import LoginForm, TicketForm
 from werkzeug.security import generate_password_hash
 
 @login_manager.user_loader
@@ -26,22 +26,6 @@ def login():
         else:
             flash('Invalid username or password', 'danger')
     return render_template('login.html', form=form)
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
-    form = RegistrationForm()
-    if form.validate_on_submit():
-        user = User()
-        user.username = form.username.data
-        user.email = form.email.data
-        user.set_password(form.password.data)
-        db.session.add(user)
-        db.session.commit()
-        flash('Your account has been created! You are now able to log in', 'success')
-        return redirect(url_for('login'))
-    return render_template('register.html', form=form)
 
 @app.route('/create_predefined_user', methods=['GET'])
 def create_predefined_user():
@@ -72,44 +56,43 @@ def logout():
 def dashboard():
     form = TicketForm()
     if form.validate_on_submit():
-        ticket = Ticket()
-        ticket.title = form.title.data
-        ticket.description = form.description.data
-        ticket.status = form.status.data
-        ticket.author = current_user
+        ticket = Ticket(
+            title=form.title.data,
+            description=form.description.data,
+            status=form.status.data,
+            user_id=current_user.id,
+            assigned_user_id=form.assigned_to.data
+        )
         db.session.add(ticket)
         db.session.commit()
         flash('Your ticket has been created!', 'success')
         return redirect(url_for('dashboard'))
-    tickets = current_user.tickets.all()
+    tickets = Ticket.query.filter((Ticket.user_id == current_user.id) | (Ticket.assigned_user_id == current_user.id)).all()
     return render_template('dashboard.html', form=form, tickets=tickets)
 
 @app.route('/ticket/<int:ticket_id>/update', methods=['GET', 'POST'])
 @login_required
 def update_ticket(ticket_id):
     ticket = Ticket.query.get_or_404(ticket_id)
-    if ticket.author != current_user:
+    if ticket.user_id != current_user.id and ticket.assigned_user_id != current_user.id:
         flash('You do not have permission to update this ticket.', 'danger')
         return redirect(url_for('dashboard'))
-    form = TicketForm()
+    form = TicketForm(obj=ticket)
     if form.validate_on_submit():
         ticket.title = form.title.data
         ticket.description = form.description.data
         ticket.status = form.status.data
+        ticket.assigned_user_id = form.assigned_to.data
         db.session.commit()
         flash('Your ticket has been updated!', 'success')
         return redirect(url_for('dashboard'))
-    elif request.method == 'GET':
-        form.title.data = ticket.title
-        form.description.data = ticket.description
-        form.status.data = ticket.status
-    return render_template('dashboard.html', form=form, update_ticket=ticket)
+    return render_template('update_ticket.html', form=form, ticket=ticket)
 
 @app.route('/ticket/<int:ticket_id>/delete', methods=['POST'])
 @login_required
 def delete_ticket(ticket_id):
     ticket = Ticket.query.get_or_404(ticket_id)
-    if ticket.author != current_user:
+    if ticket.user_id != current_user.id:
         flash('You do not have permission to delete this ticket.', 'danger')
         return redirect(url_for('dashboard'))
     db.session.delete(ticket)
@@ -120,7 +103,7 @@ def delete_ticket(ticket_id):
 @app.route('/delete_all_tickets', methods=['POST'])
 @login_required
 def delete_all_tickets():
-    current_user.tickets.delete()
+    Ticket.query.filter_by(user_id=current_user.id).delete()
     db.session.commit()
     flash('All your tickets have been deleted!', 'success')
     return redirect(url_for('dashboard'))
