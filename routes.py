@@ -67,15 +67,15 @@ def dashboard():
         db.session.commit()
         flash('Your ticket has been created!', 'success')
         return redirect(url_for('dashboard'))
-    tickets = Ticket.query.filter((Ticket.user_id == current_user.id) | (Ticket.assigned_user_id == current_user.id)).all()
+    tickets = Ticket.query.filter((Ticket.user_id == current_user.id) | (Ticket.assigned_user_id == current_user.id)).filter_by(closed=False).all()
     return render_template('dashboard.html', form=form, tickets=tickets)
 
-@app.route('/ticket/<int:ticket_id>/update', methods=['GET', 'POST'])
+@app.route('/ticket/<int:ticket_id>/edit', methods=['GET', 'POST'])
 @login_required
-def update_ticket(ticket_id):
+def edit_ticket(ticket_id):
     ticket = Ticket.query.get_or_404(ticket_id)
     if ticket.user_id != current_user.id and ticket.assigned_user_id != current_user.id:
-        flash('You do not have permission to update this ticket.', 'danger')
+        flash('You do not have permission to edit this ticket.', 'danger')
         return redirect(url_for('dashboard'))
     form = TicketForm(obj=ticket)
     if form.validate_on_submit():
@@ -86,7 +86,19 @@ def update_ticket(ticket_id):
         db.session.commit()
         flash('Your ticket has been updated!', 'success')
         return redirect(url_for('dashboard'))
-    return render_template('update_ticket.html', form=form, ticket=ticket)
+    return render_template('edit_ticket.html', form=form, ticket=ticket)
+
+@app.route('/ticket/<int:ticket_id>/close', methods=['POST'])
+@login_required
+def close_ticket(ticket_id):
+    ticket = Ticket.query.get_or_404(ticket_id)
+    if ticket.user_id != current_user.id and ticket.assigned_user_id != current_user.id:
+        flash('You do not have permission to close this ticket.', 'danger')
+        return redirect(url_for('dashboard'))
+    ticket.closed = True
+    db.session.commit()
+    flash('Your ticket has been closed!', 'success')
+    return redirect(url_for('dashboard'))
 
 @app.route('/ticket/<int:ticket_id>/delete', methods=['POST'])
 @login_required
@@ -107,3 +119,9 @@ def delete_all_tickets():
     db.session.commit()
     flash('All your tickets have been deleted!', 'success')
     return redirect(url_for('dashboard'))
+
+@app.route('/archive')
+@login_required
+def archive():
+    closed_tickets = Ticket.query.filter((Ticket.user_id == current_user.id) | (Ticket.assigned_user_id == current_user.id)).filter_by(closed=True).all()
+    return render_template('archive.html', tickets=closed_tickets)

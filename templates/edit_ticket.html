@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Edit Ticket</h2>
+<form method="POST" action="{{ url_for('edit_ticket', ticket_id=ticket.id) }}">
+    {{ form.hidden_tag() }}
+    <div class="mb-3">
+        {{ form.title.label(class="form-label") }}
+        {{ form.title(class="form-control") }}
+    </div>
+    <div class="mb-3">
+        {{ form.description.label(class="form-label") }}
+        {{ form.description(class="form-control") }}
+    </div>
+    <div class="mb-3">
+        {{ form.status.label(class="form-label") }}
+        {{ form.status(class="form-select") }}
+    </div>
+    <div class="mb-3">
+        {{ form.assigned_to.label(class="form-label") }}
+        {{ form.assigned_to(class="form-select") }}
+    </div>
+    <div class="mb-3">
+        {{ form.submit(class="btn btn-primary") }}
+    </div>
+</form>
+{% endblock %}

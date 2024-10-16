@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Ticket Archive</h2>
+
+{% if tickets %}
+    <ul class="list-group">
+        {% for ticket in tickets %}
+            <li class="list-group-item">
+                <h5>{{ ticket.title }}</h5>
+                <p>{{ ticket.description }}</p>
+                <p><strong>Status:</strong> {{ ticket.status }}</p>
+                <p><strong>Created by:</strong> {{ ticket.author.username }}</p>
+                <p><strong>Assigned to:</strong> {{ ticket.assigned_to.username }}</p>
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>There are no closed tickets.</p>
+{% endif %}
+
+<a href="{{ url_for('dashboard') }}" class="btn btn-primary mt-3">Back to Dashboard</a>
+{% endblock %}
